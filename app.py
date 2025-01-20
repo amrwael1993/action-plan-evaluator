@@ -78,7 +78,7 @@ uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
     # Load full data to detect header row dynamically
-    full_data = pd.read_excel(uploaded_file, header=None, skip_blank_lines=True)
+    full_data = pd.read_excel(uploaded_file, header=None)
 
     # Detect the header row dynamically
     header_row = None
