@@ -2,41 +2,60 @@ import streamlit as st
 
 # Evaluation function
 def evaluate_action_plan(reasons, measures, deadline, responsibility):
-    root_cause_score = 0
-    action_plan_score = 0
+    # Initialize scores and comments
+    root_cause_criteria = {
+        "Systematic and Understandable": 0,
+        "Linked to Findings": 0,
+        "Depth of Analysis": 0
+    }
+    action_plan_criteria = {
+        "Specificity and Clarity": 0,
+        "Linked to Root Cause": 0,
+        "Timeline and Responsibility": 0
+    }
     comments = ""
 
-    # Evaluate Reasons (Root Cause Analysis)
+    # Root Cause Evaluation
     if "why" in reasons.lower():
-        root_cause_score += 2
+        root_cause_criteria["Systematic and Understandable"] = 2
     else:
         comments += "Root Cause: Missing systematic approach. "
+
     if "FIFO" in reasons.upper():
-        root_cause_score += 2
+        root_cause_criteria["Linked to Findings"] = 2
     else:
         comments += "Root Cause: Not linked to findings. "
+
     if len(reasons.split()) > 10:
-        root_cause_score += 1
+        root_cause_criteria["Depth of Analysis"] = 1
     else:
         comments += "Root Cause: Insufficient depth in analysis. "
 
-    # Evaluate Measures (Action Plan)
+    # Action Plan Evaluation
     if "implementation" in measures.lower():
-        action_plan_score += 2
+        action_plan_criteria["Specificity and Clarity"] = 2
     else:
         comments += "Action Plan: Missing implementation details. "
+
     if deadline:
-        action_plan_score += 1
+        action_plan_criteria["Timeline and Responsibility"] += 1
     else:
         comments += "Action Plan: No timeline provided. "
+
     if responsibility:
-        action_plan_score += 1
+        action_plan_criteria["Timeline and Responsibility"] += 1
     else:
         comments += "Action Plan: No responsibility assigned. "
 
+    # Calculate Total Scores
+    root_cause_score = sum(root_cause_criteria.values())
+    action_plan_score = sum(action_plan_criteria.values())
+
     return {
         "Root Cause Score": min(root_cause_score, 5),
+        "Root Cause Breakdown": root_cause_criteria,
         "Action Plan Score": min(action_plan_score, 5),
+        "Action Plan Breakdown": action_plan_criteria,
         "Comments": comments
     }
 
@@ -54,6 +73,20 @@ if st.button("Evaluate"):
     # Evaluate and display results
     results = evaluate_action_plan(reasons, measures, deadline, responsibility)
     st.subheader("Evaluation Results")
+
+    # Display Overall Scores
     st.write(f"**Root Cause Score:** {results['Root Cause Score']}/5")
     st.write(f"**Action Plan Score:** {results['Action Plan Score']}/5")
-    st.write(f"**Comments:** {results['Comments']}")
+
+    # Display Detailed Criteria
+    st.subheader("Root Cause Evaluation Criteria")
+    for criterion, score in results["Root Cause Breakdown"].items():
+        st.write(f"{criterion}: {score}/2")
+
+    st.subheader("Action Plan Evaluation Criteria")
+    for criterion, score in results["Action Plan Breakdown"].items():
+        st.write(f"{criterion}: {score}/2")
+
+    # Display Comments
+    st.subheader("Comments")
+    st.write(results["Comments"])
