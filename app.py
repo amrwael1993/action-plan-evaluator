@@ -1,44 +1,75 @@
 import streamlit as st
 import pandas as pd
 import io
-from transformers import pipeline
 
-# Load the sentiment analysis pipeline (can be extended for semantic tasks)
-@st.cache_resource
-def load_model():
-    return pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
-
-model = load_model()
-
-# Semantic Evaluation Function
-def evaluate_action_plan_semantic(findings, reasons, measures, deadline, responsibility):
-    # Define evaluation criteria
-    evaluation_criteria = [
-        "Will the corrective actions eliminate recurrence?",
-        "Are the actions linked to the identified root cause?",
-        "Are the actions clear and understandable?",
-        "Do the actions match the criticality of the finding?"
-    ]
-
-    # Context for evaluation
-    context = f"Finding: {findings}\nRoot Cause: {reasons}\nAction Plan: {measures}"
-
-    # Evaluate each criterion
-    scores = {}
+# Enhanced Evaluation Function
+def evaluate_action_plan(reasons, measures, deadline, responsibility):
+    # Initialize scores and comments
+    root_cause_criteria = {
+        "Systematic and Understandable": 0,
+        "Linked to Findings": 0,
+        "Depth of Analysis": 0
+    }
+    action_plan_criteria = {
+        "Specificity and Clarity": 0,
+        "Linked to Root Cause": 0,
+        "Timeline and Responsibility": 0,
+        "Criticality Match": 0
+    }
     comments = ""
-    for criterion in evaluation_criteria:
-        full_text = f"{criterion}\nContext: {context}"
-        result = model(full_text)[0]  # Use the model to classify the text
-        score = 2 if result['label'] == 'POSITIVE' else 0
-        scores[criterion] = score
-        comments += f"{criterion}: {result['label']} ({result['score']:.2f})\n"
 
-    # Calculate total score
-    action_plan_score = sum(scores.values())
+    # Root Cause Evaluation
+    if "why" in reasons.lower():
+        root_cause_criteria["Systematic and Understandable"] = 2
+    else:
+        comments += "Root Cause: Missing systematic approach. "
+
+    if "FIFO" in reasons.upper():
+        root_cause_criteria["Linked to Findings"] = 2
+    else:
+        comments += "Root Cause: Not linked to findings. "
+
+    if len(reasons.split()) > 10:
+        root_cause_criteria["Depth of Analysis"] = 1
+    else:
+        comments += "Root Cause: Insufficient depth in analysis. "
+
+    # Action Plan Evaluation
+    if len(measures.split()) > 5:
+        action_plan_criteria["Specificity and Clarity"] = 2
+    else:
+        comments += "Action Plan: Actions lack sufficient detail. "
+
+    if "prevent" in measures.lower() or "address" in measures.lower() or "eliminate" in measures.lower():
+        action_plan_criteria["Linked to Root Cause"] = 2
+    elif len(reasons) > 0 and len(measures) > 0:
+        action_plan_criteria["Linked to Root Cause"] = 1
+        comments += "Action Plan: Actions partially address the root cause. "
+    else:
+        comments += "Action Plan: Actions do not address the root cause. "
+
+    if deadline and responsibility:
+        action_plan_criteria["Timeline and Responsibility"] = 2
+    elif deadline or responsibility:
+        action_plan_criteria["Timeline and Responsibility"] = 1
+        comments += "Action Plan: Timeline or responsibility is missing. "
+    else:
+        comments += "Action Plan: Neither timeline nor responsibility is defined. "
+
+    if "critical" in measures.lower() or "priority" in measures.lower():
+        action_plan_criteria["Criticality Match"] = 1
+    else:
+        comments += "Action Plan: Actions may not match the criticality of the finding. "
+
+    # Calculate Total Scores
+    root_cause_score = sum(root_cause_criteria.values())
+    action_plan_score = sum(action_plan_criteria.values())
 
     return {
+        "Root Cause Score": min(root_cause_score, 5),
+        "Root Cause Breakdown": root_cause_criteria,
         "Action Plan Score": min(action_plan_score, 5),
-        "Action Plan Breakdown": scores,
+        "Action Plan Breakdown": action_plan_criteria,
         "Comments": comments
     }
 
@@ -86,8 +117,8 @@ if uploaded_file:
                 deadline = row["Deadline"]
                 responsibility = row["Responsibility"]
 
-                # Evaluate the action plan using semantic evaluation
-                result = evaluate_action_plan_semantic(findings, reasons, measures, deadline, responsibility)
+                # Evaluate the action plan for this row
+                result = evaluate_action_plan(reasons, measures, deadline, responsibility)
                 result["Row"] = index + 1  # Add row number for reference
                 result["Findings"] = findings  # Include Findings in the result
                 result["Action"] = measures  # Include Action (Measures)
@@ -99,7 +130,13 @@ if uploaded_file:
                 st.write(f"**Row {result['Row']}**")
                 st.write(f"**Findings:** {result['Findings']}")
                 st.write(f"**Action:** {result['Action']}")
+                st.write(f"**Root Cause Score:** {result['Root Cause Score']}/5")
                 st.write(f"**Action Plan Score:** {result['Action Plan Score']}/5")
+
+                # Display criteria breakdown for Root Cause
+                st.write("**Root Cause Evaluation Criteria**")
+                for criterion, score in result["Root Cause Breakdown"].items():
+                    st.write(f"{criterion}: {score}/2")
 
                 # Display criteria breakdown for Action Plan
                 st.write("**Action Plan Evaluation Criteria**")
@@ -117,6 +154,7 @@ if uploaded_file:
                     "Row": result["Row"],
                     "Findings": result["Findings"],  # Add Findings to export
                     "Action": result["Action"],  # Add Action (Measures) to export
+                    "Root Cause Score": result["Root Cause Score"],
                     "Action Plan Score": result["Action Plan Score"],
                     "Comments": result["Comments"]
                 })
@@ -140,3 +178,34 @@ if uploaded_file:
     else:
         st.error("Could not detect the header row. Please check your file format.")
         st.stop()
+
+# Input fields for manual testing
+st.write("Enter the details of the action plan below for evaluation.")
+
+# Input fields
+reasons = st.text_area("Reasons (Root Cause Analysis)", height=100)
+measures = st.text_area("Measures (Action Plan)", height=100)
+deadline = st.text_input("Deadline")
+responsibility = st.text_input("Responsibility")
+
+if st.button("Evaluate"):
+    # Evaluate and display results
+    results = evaluate_action_plan(reasons, measures, deadline, responsibility)
+    st.subheader("Evaluation Results")
+
+    # Display Overall Scores
+    st.write(f"**Root Cause Score:** {results['Root Cause Score']}/5")
+    st.write(f"**Action Plan Score:** {results['Action Plan Score']}/5")
+
+    # Display Detailed Criteria
+    st.subheader("Root Cause Evaluation Criteria")
+    for criterion, score in results["Root Cause Breakdown"].items():
+        st.write(f"{criterion}: {score}/2")
+
+    st.subheader("Action Plan Evaluation Criteria")
+    for criterion, score in results["Action Plan Breakdown"].items():
+        st.write(f"{criterion}: {score}/2")
+
+    # Display Comments
+    st.subheader("Comments")
+    st.write(results["Comments"])
