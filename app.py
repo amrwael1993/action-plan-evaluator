@@ -5,7 +5,9 @@ import os
 
 # Create a file to store feedback
 if not os.path.exists("feedback.csv"):
-    pd.DataFrame(columns=["Findings", "Action", "Root Cause Score", "Action Plan Score", "Adjusted Action Plan Score", "Feedback"]).to_csv("feedback.csv", index=False)
+    pd.DataFrame(columns=["Findings", "Action", "Root Cause Score", "Adjusted Root Cause Score", 
+                          "Action Plan Score", "Adjusted Action Plan Score", 
+                          "Root Cause Feedback", "Action Plan Feedback"]).to_csv("feedback.csv", index=False)
 
 # Evaluation function
 def evaluate_action_plan(reasons, measures, deadline, responsibility):
@@ -113,18 +115,24 @@ if uploaded_file:
                     status = "Met" if score > 0 else "Unmet"
                     st.write(f"- {criterion}: {status}")
 
-                # Collect feedback
-                feedback = st.text_area(f"Feedback for Row {result['Row']}", "")
-                adjusted_score = st.slider(f"Adjusted Action Plan Score for Row {result['Row']}", 0, 5, int(result["Action Plan Score"]))
+                # Collect feedback for root cause
+                root_cause_feedback = st.text_area(f"Root Cause Feedback for Row {result['Row']}", "")
+                adjusted_root_cause_score = st.slider(f"Adjusted Root Cause Score for Row {result['Row']}", 0, 5, int(result["Root Cause Score"]))
+
+                # Collect feedback for action plan
+                action_plan_feedback = st.text_area(f"Action Plan Feedback for Row {result['Row']}", "")
+                adjusted_action_plan_score = st.slider(f"Adjusted Action Plan Score for Row {result['Row']}", 0, 5, int(result["Action Plan Score"]))
 
                 if st.button(f"Submit Feedback for Row {result['Row']}"):
                     feedback_data = {
                         "Findings": result["Findings"],
                         "Action": result["Action"],
                         "Root Cause Score": result["Root Cause Score"],
+                        "Adjusted Root Cause Score": adjusted_root_cause_score,
                         "Action Plan Score": result["Action Plan Score"],
-                        "Adjusted Action Plan Score": adjusted_score,
-                        "Feedback": feedback,
+                        "Adjusted Action Plan Score": adjusted_action_plan_score,
+                        "Root Cause Feedback": root_cause_feedback,
+                        "Action Plan Feedback": action_plan_feedback,
                     }
                     feedback_df = pd.DataFrame([feedback_data])
                     feedback_df.to_csv("feedback.csv", mode="a", header=False, index=False)
