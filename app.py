@@ -109,6 +109,7 @@ if uploaded_file:
                 result = evaluate_action_plan(reasons, measures, deadline, responsibility)
                 result["Row"] = index + 1  # Add row number for reference
                 result["Findings"] = findings  # Include Findings in the result
+                result["Action"] = measures  # Include Action (Measures)
                 evaluation_results.append(result)
 
             # Display the evaluation results for each row
@@ -116,6 +117,7 @@ if uploaded_file:
             for result in evaluation_results:
                 st.write(f"**Row {result['Row']}**")
                 st.write(f"**Findings:** {result['Findings']}")
+                st.write(f"**Action:** {result['Action']}")
                 st.write(f"**Root Cause Score:** {result['Root Cause Score']}/5")
                 st.write(f"**Action Plan Score:** {result['Action Plan Score']}/5")
 
@@ -139,6 +141,7 @@ if uploaded_file:
                 export_data.append({
                     "Row": result["Row"],
                     "Findings": result["Findings"],  # Add Findings to export
+                    "Action": result["Action"],  # Add Action (Measures) to export
                     "Root Cause Score": result["Root Cause Score"],
                     "Action Plan Score": result["Action Plan Score"],
                     "Comments": result["Comments"]
