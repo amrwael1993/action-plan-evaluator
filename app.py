@@ -99,6 +99,7 @@ if uploaded_file:
             # Loop through each row in the DataFrame
             for index, row in df.iterrows():
                 # Extract data from each row
+                findings = row["Findings"]
                 reasons = row["Reasons"]
                 measures = row["Measures"]
                 deadline = row["Deadline"]
@@ -107,12 +108,14 @@ if uploaded_file:
                 # Evaluate the action plan for this row
                 result = evaluate_action_plan(reasons, measures, deadline, responsibility)
                 result["Row"] = index + 1  # Add row number for reference
+                result["Findings"] = findings  # Include Findings in the result
                 evaluation_results.append(result)
 
             # Display the evaluation results for each row
             st.subheader("Evaluation Results")
             for result in evaluation_results:
                 st.write(f"**Row {result['Row']}**")
+                st.write(f"**Findings:** {result['Findings']}")
                 st.write(f"**Root Cause Score:** {result['Root Cause Score']}/5")
                 st.write(f"**Action Plan Score:** {result['Action Plan Score']}/5")
 
@@ -135,6 +138,7 @@ if uploaded_file:
             for result in evaluation_results:
                 export_data.append({
                     "Row": result["Row"],
+                    "Findings": result["Findings"],  # Add Findings to export
                     "Root Cause Score": result["Root Cause Score"],
                     "Action Plan Score": result["Action Plan Score"],
                     "Comments": result["Comments"]
