@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 # Evaluation function
 def evaluate_action_plan(reasons, measures, deadline, responsibility):
