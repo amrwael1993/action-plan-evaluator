@@ -65,53 +65,74 @@ st.title("Action Plan Evaluator")
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
-    # Read the uploaded Excel file
-    df = pd.read_excel(uploaded_file)
+    # Read the entire sheet without skipping rows
+    full_data = pd.read_excel(uploaded_file, header=None)
 
-    # Filter out rows where "Findings" is empty
-    df = df[df["Findings"].notna()]
+    # Dynamically detect the header row based on column names
+    header_row = None
+    for i, row in full_data.iterrows():
+        if any("Reasons" in str(cell) for cell in row):
+            header_row = i
+            break
 
-    # Display the uploaded data
-    st.subheader("Uploaded Data")
-    st.write(df)
+    if header_row is not None:
+        # Load the actual data starting from the detected header row
+        df = pd.read_excel(uploaded_file, skiprows=header_row)
 
-    if not df.empty:
-        # Initialize results list
-        evaluation_results = []
+        # Display the uploaded data
+        st.subheader("Uploaded Data")
+        st.write(df)
 
-        # Loop through each row in the DataFrame
-        for index, row in df.iterrows():
-            # Extract data from each row
-            reasons = row["Reasons"]
-            measures = row["Measures"]
-            deadline = row["Deadline"]
-            responsibility = row["Responsibility"]
+        # Ensure the "Findings" column exists
+        if "Findings" in df.columns:
+            # Filter rows where "Findings" is not empty
+            df = df[df["Findings"].notna()]
+        else:
+            st.error("The column 'Findings' is missing in the uploaded file. Please check the file format.")
+            st.stop()
 
-            # Evaluate the action plan for this row
-            result = evaluate_action_plan(reasons, measures, deadline, responsibility)
-            result["Row"] = index + 1  # Add row number for reference
-            evaluation_results.append(result)
+        if not df.empty:
+            # Initialize results list
+            evaluation_results = []
 
-        # Display the evaluation results for each row
-        st.subheader("Evaluation Results")
-        for result in evaluation_results:
-            st.write(f"**Row {result['Row']}**")
-            st.write(f"**Root Cause Score:** {result['Root Cause Score']}/5")
-            st.write(f"**Action Plan Score:** {result['Action Plan Score']}/5")
+            # Loop through each row in the DataFrame
+            for index, row in df.iterrows():
+                # Extract data from each row
+                reasons = row["Reasons"]
+                measures = row["Measures"]
+                deadline = row["Deadline"]
+                responsibility = row["Responsibility"]
 
-            # Display criteria breakdown for Root Cause
-            st.write("**Root Cause Evaluation Criteria**")
-            for criterion, score in result["Root Cause Breakdown"].items():
-                st.write(f"{criterion}: {score}/2")
+                # Evaluate the action plan for this row
+                result = evaluate_action_plan(reasons, measures, deadline, responsibility)
+                result["Row"] = index + 1  # Add row number for reference
+                evaluation_results.append(result)
 
-            # Display criteria breakdown for Action Plan
-            st.write("**Action Plan Evaluation Criteria**")
-            for criterion, score in result["Action Plan Breakdown"].items():
-                st.write(f"{criterion}: {score}/2")
+            # Display the evaluation results for each row
+            st.subheader("Evaluation Results")
+            for result in evaluation_results:
+                st.write(f"**Row {result['Row']}**")
+                st.write(f"**Root Cause Score:** {result['Root Cause Score']}/5")
+                st.write(f"**Action Plan Score:** {result['Action Plan Score']}/5")
 
-            # Display comments
-            st.write(f"**Comments:** {result['Comments']}")
-            st.write("---")  # Separator for each row
+                # Display criteria breakdown for Root Cause
+                st.write("**Root Cause Evaluation Criteria**")
+                for criterion, score in result["Root Cause Breakdown"].items():
+                    st.write(f"{criterion}: {score}/2")
+
+                # Display criteria breakdown for Action Plan
+                st.write("**Action Plan Evaluation Criteria**")
+                for criterion, score in result["Action Plan Breakdown"].items():
+                    st.write(f"{criterion}: {score}/2")
+
+                # Display comments
+                st.write(f"**Comments:** {result['Comments']}")
+                st.write("---")  # Separator for each row
+        else:
+            st.warning("No data found after filtering for non-empty 'Findings' rows.")
+    else:
+        st.error("Could not detect the header row. Please check your file format.")
+        st.stop()
 
 # Input fields for manual testing
 st.write("Enter the details of the action plan below for evaluation.")
