@@ -61,6 +61,7 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
 
 # Streamlit App
 st.title("Action Plan Evaluator")
+uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 st.write("Enter the details of the action plan below for evaluation.")
 
 # Input fields
