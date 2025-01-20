@@ -39,10 +39,14 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
     else:
         comments += "Action Plan: Actions lack sufficient detail. "
 
+    # Evaluate linkage to root cause
+    linked_to_root_cause = False
     if "prevent" in measures.lower() or "eliminate" in measures.lower():
         action_plan_criteria["Linked to Root Cause"] = 2
+        linked_to_root_cause = True
     elif len(reasons) > 0 and len(measures) > 0:
         action_plan_criteria["Linked to Root Cause"] = 1
+        linked_to_root_cause = True
         comments += "Action Plan: Actions partially address the root cause. "
     else:
         comments += "Action Plan: Actions do not address the root cause. "
@@ -60,19 +64,19 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
     else:
         comments += "Action Plan: Actions may not match the criticality of the finding. "
 
-    # Calculate scores, ensuring unmet criteria affect the total
+    # Calculate scores, ensuring the "Linked to Root Cause" criterion affects the total
     root_cause_score = sum(root_cause_criteria.values())
     action_plan_score = sum(action_plan_criteria.values())
 
-    # Apply penalties: deduct points for unmet criteria from the total score
-    max_action_plan_score = 5
-    unmet_criteria_count = sum(1 for val in action_plan_criteria.values() if val == 0)
-    action_plan_score = max(0, max_action_plan_score - unmet_criteria_count)
+    # Enforce the rule: if "Linked to Root Cause" is not met, Action Plan Score cannot exceed 2
+    if not linked_to_root_cause:
+        action_plan_score = min(action_plan_score, 2)
+        comments += "Action Plan: The score is capped because actions are not linked to the root cause. "
 
     return {
         "Root Cause Score": min(root_cause_score, 5),
         "Root Cause Breakdown": root_cause_criteria,
-        "Action Plan Score": action_plan_score,
+        "Action Plan Score": min(action_plan_score, 5),
         "Action Plan Breakdown": action_plan_criteria,
         "Comments": comments
     }
