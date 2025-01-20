@@ -39,12 +39,11 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
     else:
         comments += "Action Plan: Actions lack sufficient detail. "
 
-    # Evaluate linkage to root cause
     linked_to_root_cause = False
     if "prevent" in measures.lower() or "eliminate" in measures.lower():
         action_plan_criteria["Linked to Root Cause"] = 2
         linked_to_root_cause = True
-    elif len(reasons) > 0 and len(measures) > 0:
+    elif reasons and measures:
         action_plan_criteria["Linked to Root Cause"] = 1
         linked_to_root_cause = True
         comments += "Action Plan: Actions partially address the root cause. "
@@ -64,14 +63,14 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
     else:
         comments += "Action Plan: Actions may not match the criticality of the finding. "
 
-    # Calculate scores, ensuring the "Linked to Root Cause" criterion affects the total
+    # Calculate scores, enforcing "Linked to Root Cause" rule
     root_cause_score = sum(root_cause_criteria.values())
     action_plan_score = sum(action_plan_criteria.values())
 
-    # Enforce the rule: if "Linked to Root Cause" is not met, Action Plan Score cannot exceed 2
+    # Cap Action Plan Score if "Linked to Root Cause" is unmet
     if not linked_to_root_cause:
         action_plan_score = min(action_plan_score, 2)
-        comments += "Action Plan: The score is capped because actions are not linked to the root cause. "
+        comments += "Action Plan: Score capped as actions are not linked to the root cause. "
 
     return {
         "Root Cause Score": min(root_cause_score, 5),
