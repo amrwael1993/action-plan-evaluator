@@ -60,14 +60,19 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
     else:
         comments += "Action Plan: Actions may not match the criticality of the finding. "
 
-    # Recalculate scores to ensure unmet criteria don't receive points
+    # Calculate scores, ensuring unmet criteria affect the total
     root_cause_score = sum(root_cause_criteria.values())
     action_plan_score = sum(action_plan_criteria.values())
+
+    # Apply penalties: deduct points for unmet criteria from the total score
+    max_action_plan_score = 5
+    unmet_criteria_count = sum(1 for val in action_plan_criteria.values() if val == 0)
+    action_plan_score = max(0, max_action_plan_score - unmet_criteria_count)
 
     return {
         "Root Cause Score": min(root_cause_score, 5),
         "Root Cause Breakdown": root_cause_criteria,
-        "Action Plan Score": min(action_plan_score, 5),
+        "Action Plan Score": action_plan_score,
         "Action Plan Breakdown": action_plan_criteria,
         "Comments": comments
     }
