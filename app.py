@@ -51,7 +51,9 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
 
     return {
         "Root Cause Score": min(root_cause_score, 5),
+        "Root Cause Breakdown": root_cause_criteria,
         "Action Plan Score": min(action_plan_score, 5),
+        "Action Plan Breakdown": action_plan_criteria,
         "Comments": comments,
     }
 
@@ -93,12 +95,23 @@ if uploaded_file:
 
             st.subheader("Evaluation Results")
             for result in evaluation_results:
-                st.write(f"Row {result['Row']}")
+                st.write(f"**Row {result['Row']}**")
                 st.write(f"Findings: {result['Findings']}")
                 st.write(f"Action: {result['Action']}")
                 st.write(f"Root Cause Score: {result['Root Cause Score']}/5")
                 st.write(f"Action Plan Score: {result['Action Plan Score']}/5")
                 st.write(f"Comments: {result['Comments']}")
+
+                # Display criteria breakdown
+                st.write("**Root Cause Evaluation Criteria (Met/Unmet):**")
+                for criterion, score in result["Root Cause Breakdown"].items():
+                    status = "Met" if score > 0 else "Unmet"
+                    st.write(f"- {criterion}: {status}")
+
+                st.write("**Action Plan Evaluation Criteria (Met/Unmet):**")
+                for criterion, score in result["Action Plan Breakdown"].items():
+                    status = "Met" if score > 0 else "Unmet"
+                    st.write(f"- {criterion}: {status}")
 
                 # Collect feedback
                 feedback = st.text_area(f"Feedback for Row {result['Row']}", "")
