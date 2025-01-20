@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 # Evaluation function
 def evaluate_action_plan(reasons, measures, deadline, responsibility):
@@ -128,6 +129,31 @@ if uploaded_file:
                 # Display comments
                 st.write(f"**Comments:** {result['Comments']}")
                 st.write("---")  # Separator for each row
+
+            # Export evaluation results to Excel
+            export_data = []
+            for result in evaluation_results:
+                export_data.append({
+                    "Row": result["Row"],
+                    "Root Cause Score": result["Root Cause Score"],
+                    "Action Plan Score": result["Action Plan Score"],
+                    "Comments": result["Comments"]
+                })
+            export_df = pd.DataFrame(export_data)
+
+            # Save the DataFrame to an Excel file in memory
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                export_df.to_excel(writer, index=False, sheet_name="Evaluation Results")
+            output.seek(0)
+
+            # Add a download button
+            st.download_button(
+                label="Download Results as Excel",
+                data=output,
+                file_name="evaluation_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         else:
             st.warning("No data found after filtering for non-empty 'Findings' rows.")
     else:
