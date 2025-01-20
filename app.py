@@ -128,15 +128,3 @@ if uploaded_file:
                 file_name="evaluation_results.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
-
----
-
-### **Step 2: Collect Feedback**
-1. Upload the action plan sheet in the app.
-2. Provide feedback using the text box and adjust scores with sliders.
-3. Click "Submit Feedback" to save the feedback into `feedback.csv`.
-
----
-
-### **Step 3: Train the Machine Learning Model**
-Train a regression model using the feedback to refine the evaluation logic. I’ll guide you through this step once feedback is collected. Let me know when you’re ready!
