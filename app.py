@@ -34,15 +34,10 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
         comments += "Root Cause: Insufficient depth in analysis. "
 
     # Action Plan Evaluation
-    if len(measures.split()) > 5:
+    if "implementation" in measures.lower():
         action_plan_criteria["Specificity and Clarity"] = 2
     else:
-        comments += "Action Plan: Measures lack specificity or clarity. "
-
-    if reasons and measures:
-        action_plan_criteria["Linked to Root Cause"] = 2
-    else:
-        comments += "Action Plan: Measures not linked to the root cause. "
+        comments += "Action Plan: Missing implementation details. "
 
     if deadline:
         action_plan_criteria["Timeline and Responsibility"] += 1
