@@ -2,52 +2,70 @@ import streamlit as st
 import pandas as pd
 import io
 
-# Evaluation function
+# Updated Evaluation function
 def evaluate_action_plan(reasons, measures, deadline, responsibility):
     # Initialize scores and comments
     root_cause_criteria = {
-        "Systematic and Understandable": 0,
-        "Linked to Findings": 0,
-        "Depth of Analysis": 0
+        "Linkage to Finding": 0,
+        "Systematic Approach": 0,
+        "Completeness": 0,
+        "Depth of Analysis": 0,
+        "Consideration of Secondary Causes": 0
     }
     action_plan_criteria = {
         "Specificity and Clarity": 0,
-        "Linked to Root Cause": 0,
-        "Timeline and Responsibility": 0
+        "Linkage to Root Cause": 0,
+        "Preventive Nature": 0,
+        "Systematic Actions": 0
     }
     comments = ""
 
     # Root Cause Evaluation
     if "why" in reasons.lower():
-        root_cause_criteria["Systematic and Understandable"] = 2
+        root_cause_criteria["Systematic Approach"] = 2
     else:
         comments += "Root Cause: Missing systematic approach. "
 
-    if "FIFO" in reasons.upper():
-        root_cause_criteria["Linked to Findings"] = 2
+    if "linked" in reasons.lower():
+        root_cause_criteria["Linkage to Finding"] = 2
     else:
-        comments += "Root Cause: Not linked to findings. "
+        comments += "Root Cause: Not clearly linked to the finding. "
 
-    if len(reasons.split()) > 10:
+    if len(reasons.split()) > 20:
+        root_cause_criteria["Completeness"] = 1
+    else:
+        comments += "Root Cause: Analysis lacks completeness. "
+
+    if "depth" in reasons.lower():
         root_cause_criteria["Depth of Analysis"] = 1
     else:
-        comments += "Root Cause: Insufficient depth in analysis. "
+        comments += "Root Cause: Lacks depth in analysis. "
+
+    if "secondary" in reasons.lower():
+        root_cause_criteria["Consideration of Secondary Causes"] = 1
+    else:
+        comments += "Root Cause: Secondary causes not considered. "
 
     # Action Plan Evaluation
-    if "implementation" in measures.lower():
+    if len(measures) > 20:
         action_plan_criteria["Specificity and Clarity"] = 2
     else:
-        comments += "Action Plan: Missing implementation details. "
+        comments += "Action Plan: Missing specific or clear actions. "
 
-    if deadline:
-        action_plan_criteria["Timeline and Responsibility"] += 1
+    if "root cause" in measures.lower():
+        action_plan_criteria["Linkage to Root Cause"] = 2
     else:
-        comments += "Action Plan: No timeline provided. "
+        comments += "Action Plan: Not linked to the root cause. "
 
-    if responsibility:
-        action_plan_criteria["Timeline and Responsibility"] += 1
+    if "preventive" in measures.lower():
+        action_plan_criteria["Preventive Nature"] = 1
     else:
-        comments += "Action Plan: No responsibility assigned. "
+        comments += "Action Plan: Actions are not preventive. "
+
+    if "systematic" in measures.lower():
+        action_plan_criteria["Systematic Actions"] = 1
+    else:
+        comments += "Action Plan: Lacks systematic approach. "
 
     # Calculate Total Scores
     root_cause_score = sum(root_cause_criteria.values())
@@ -140,8 +158,8 @@ if uploaded_file:
             for result in evaluation_results:
                 export_data.append({
                     "Row": result["Row"],
-                    "Findings": result["Findings"],  # Add Findings to export
-                    "Action": result["Action"],  # Add Action (Measures) to export
+                    "Findings": result["Findings"],
+                    "Action": result["Action"],
                     "Root Cause Score": result["Root Cause Score"],
                     "Action Plan Score": result["Action Plan Score"],
                     "Comments": result["Comments"]
@@ -157,9 +175,9 @@ if uploaded_file:
             # Add a download button
             st.download_button(
                 label="Download Results as Excel",
-                data=output,
+                data=output.getvalue(),
                 file_name="evaluation_results.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         else:
             st.warning("No data found after filtering for non-empty 'Findings' rows.")
