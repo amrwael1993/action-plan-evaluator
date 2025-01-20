@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import io
 
-# Enhanced Evaluation Function
+# Evaluation function with improved logic
 def evaluate_action_plan(reasons, measures, deadline, responsibility):
     # Initialize scores and comments
     root_cause_criteria = {
@@ -78,53 +78,35 @@ st.title("Action Plan Evaluator")
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
 if uploaded_file:
-    # Read the entire sheet without skipping rows
-    full_data = pd.read_excel(uploaded_file, header=None)
+    # Optimize memory usage for large files
+    df = pd.read_excel(uploaded_file, skip_blank_lines=True)
 
-    # Dynamically detect the header row based on column names
-    header_row = None
-    for i, row in full_data.iterrows():
-        if any("Reasons" in str(cell) for cell in row):
-            header_row = i
-            break
+    # Display uploaded data
+    st.subheader("Uploaded Data")
+    st.write(df)
 
-    if header_row is not None:
-        # Load the actual data starting from the detected header row
-        df = pd.read_excel(uploaded_file, skiprows=header_row)
-
-        # Display the uploaded data
-        st.subheader("Uploaded Data")
-        st.write(df)
-
-        # Ensure the "Findings" column exists
-        if "Findings" in df.columns:
-            # Filter rows where "Findings" is not empty
-            df = df[df["Findings"].notna()]
-        else:
-            st.error("The column 'Findings' is missing in the uploaded file. Please check the file format.")
-            st.stop()
-
+    # Ensure the "Findings" column exists
+    if "Findings" in df.columns:
+        df = df[df["Findings"].notna()]  # Filter rows with non-empty Findings
         if not df.empty:
-            # Initialize results list
             evaluation_results = []
 
-            # Loop through each row in the DataFrame
+            # Process each row
             for index, row in df.iterrows():
-                # Extract data from each row
                 findings = row["Findings"]
                 reasons = row["Reasons"]
                 measures = row["Measures"]
                 deadline = row["Deadline"]
                 responsibility = row["Responsibility"]
 
-                # Evaluate the action plan for this row
+                # Evaluate each row
                 result = evaluate_action_plan(reasons, measures, deadline, responsibility)
-                result["Row"] = index + 1  # Add row number for reference
-                result["Findings"] = findings  # Include Findings in the result
-                result["Action"] = measures  # Include Action (Measures)
+                result["Row"] = index + 1
+                result["Findings"] = findings
+                result["Action"] = measures
                 evaluation_results.append(result)
 
-            # Display the evaluation results for each row
+            # Display results
             st.subheader("Evaluation Results")
             for result in evaluation_results:
                 st.write(f"**Row {result['Row']}**")
@@ -132,41 +114,16 @@ if uploaded_file:
                 st.write(f"**Action:** {result['Action']}")
                 st.write(f"**Root Cause Score:** {result['Root Cause Score']}/5")
                 st.write(f"**Action Plan Score:** {result['Action Plan Score']}/5")
+                st.write("**Comments:**", result["Comments"])
+                st.write("---")
 
-                # Display criteria breakdown for Root Cause
-                st.write("**Root Cause Evaluation Criteria**")
-                for criterion, score in result["Root Cause Breakdown"].items():
-                    st.write(f"{criterion}: {score}/2")
-
-                # Display criteria breakdown for Action Plan
-                st.write("**Action Plan Evaluation Criteria**")
-                for criterion, score in result["Action Plan Breakdown"].items():
-                    st.write(f"{criterion}: {score}/2")
-
-                # Display comments
-                st.write(f"**Comments:** {result['Comments']}")
-                st.write("---")  # Separator for each row
-
-            # Export evaluation results to Excel
-            export_data = []
-            for result in evaluation_results:
-                export_data.append({
-                    "Row": result["Row"],
-                    "Findings": result["Findings"],  # Add Findings to export
-                    "Action": result["Action"],  # Add Action (Measures) to export
-                    "Root Cause Score": result["Root Cause Score"],
-                    "Action Plan Score": result["Action Plan Score"],
-                    "Comments": result["Comments"]
-                })
-            export_df = pd.DataFrame(export_data)
-
-            # Save the DataFrame to an Excel file in memory
+            # Export results to Excel
             output = io.BytesIO()
+            export_df = pd.DataFrame(evaluation_results)
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
                 export_df.to_excel(writer, index=False, sheet_name="Evaluation Results")
             output.seek(0)
 
-            # Add a download button
             st.download_button(
                 label="Download Results as Excel",
                 data=output,
@@ -174,38 +131,6 @@ if uploaded_file:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         else:
-            st.warning("No data found after filtering for non-empty 'Findings' rows.")
+            st.warning("No valid rows found after filtering.")
     else:
-        st.error("Could not detect the header row. Please check your file format.")
-        st.stop()
-
-# Input fields for manual testing
-st.write("Enter the details of the action plan below for evaluation.")
-
-# Input fields
-reasons = st.text_area("Reasons (Root Cause Analysis)", height=100)
-measures = st.text_area("Measures (Action Plan)", height=100)
-deadline = st.text_input("Deadline")
-responsibility = st.text_input("Responsibility")
-
-if st.button("Evaluate"):
-    # Evaluate and display results
-    results = evaluate_action_plan(reasons, measures, deadline, responsibility)
-    st.subheader("Evaluation Results")
-
-    # Display Overall Scores
-    st.write(f"**Root Cause Score:** {results['Root Cause Score']}/5")
-    st.write(f"**Action Plan Score:** {results['Action Plan Score']}/5")
-
-    # Display Detailed Criteria
-    st.subheader("Root Cause Evaluation Criteria")
-    for criterion, score in results["Root Cause Breakdown"].items():
-        st.write(f"{criterion}: {score}/2")
-
-    st.subheader("Action Plan Evaluation Criteria")
-    for criterion, score in results["Action Plan Breakdown"].items():
-        st.write(f"{criterion}: {score}/2")
-
-    # Display Comments
-    st.subheader("Comments")
-    st.write(results["Comments"])
+        st.error("The column 'Findings' is missing in the uploaded file. Please check the file format.")
