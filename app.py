@@ -64,8 +64,12 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
 st.title("Action Plan Evaluator")
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 if uploaded_file:
-    # Read the uploaded Excel file into a DataFrame
-df = pd.read_excel(uploaded_file)
+    # Read the uploaded Excel file
+    df = pd.read_excel(uploaded_file)
+
+    # Find the first row where "Findings" is not empty
+    df = df[df["Findings"].notna()]
+e)
 
 # Find the first row where the "Findings" column is not empty
 df = df[df["Findings"].notna()]
