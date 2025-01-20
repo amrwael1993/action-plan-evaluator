@@ -34,10 +34,15 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
         comments += "Root Cause: Insufficient depth in analysis. "
 
     # Action Plan Evaluation
-    if "implementation" in measures.lower():
+    if len(measures.split()) > 5:
         action_plan_criteria["Specificity and Clarity"] = 2
     else:
-        comments += "Action Plan: Missing implementation details. "
+        comments += "Action Plan: Measures lack specificity or clarity. "
+
+    if "why" in reasons.lower() and len(measures.split()) > 5:
+        action_plan_criteria["Linked to Root Cause"] = 2
+    else:
+        comments += "Action Plan: Measures not clearly linked to the root cause. "
 
     if deadline:
         action_plan_criteria["Timeline and Responsibility"] += 1
@@ -49,9 +54,13 @@ def evaluate_action_plan(reasons, measures, deadline, responsibility):
     else:
         comments += "Action Plan: No responsibility assigned. "
 
-    # Calculate Total Scores
+    # Final Scoring Rules
     root_cause_score = sum(root_cause_criteria.values())
     action_plan_score = sum(action_plan_criteria.values())
+
+    # Ensure Action Plan Score reflects critical missing links
+    if action_plan_criteria["Linked to Root Cause"] < 2:
+        action_plan_score = min(action_plan_score, 2)
 
     return {
         "Root Cause Score": min(root_cause_score, 5),
